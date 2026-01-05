@@ -3,6 +3,7 @@ import LandingPage from './components/LandingPage.jsx';
 import AuthPage from './components/AuthPage.jsx';
 import MainApp from './components/MainApp.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
+import logo from './assets/logo.PNG';
 
 const defaultConfig = {
   background_color: "#f8fafc",
@@ -92,12 +93,12 @@ function App() {
           maxWidth: '400px',
           width: '100%'
         }}>
-          <div style={{ fontSize: '72px', marginBottom: '30px' }}>
-            <i className="fas fa-folder-open float" style={{ color: '#3b82f6' }}></i>
+          <div style={{ display: 'flex', alignContent: 'center', justifyContent: 'center', fontSize: '72px', marginBottom: '30px' }}>
+            <img src={logo} alt="Logo" style={{ width: '100px', height: '100px' }} />
           </div>
           <h1 style={{ fontSize: '32px', color: '#1e293b', marginBottom: '20px', fontWeight: 800 }}>
             <i className="fas fa-file-alt" style={{ marginRight: '12px', color: '#3b82f6' }}></i>
-            Document Portfolio
+            His Amazing Grace Global Ministry
           </h1>
           <div style={{ fontSize: '48px', color: '#3b82f6', marginBottom: '20px' }}>
             <i className="fas fa-spinner spinner"></i>
