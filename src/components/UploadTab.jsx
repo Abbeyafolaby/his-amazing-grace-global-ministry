@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
+import { documentAPI } from '../utils/api.js';
 
-function UploadTab({ config, documents, currentUser, showMessage, allData, updateAllData }) {
+function UploadTab({ config, documents, currentUser, showMessage, onUploadSuccess }) {
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -13,9 +14,9 @@ function UploadTab({ config, documents, currentUser, showMessage, allData, updat
     }
 
     setIsUploading(true);
-    const newDocs = [];
+    let uploadedCount = 0;
 
-    // Process each file and read its content as Base64
+    // Process each file and upload to backend
     for (const file of filesArray) {
       try {
         // Convert file to Base64
@@ -26,28 +27,27 @@ function UploadTab({ config, documents, currentUser, showMessage, allData, updat
           reader.readAsDataURL(file);
         });
 
-        const newDoc = {
-          id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-          isUser: false,
-          userId: currentUser.id,
-          name: file.name,
-          size: file.size,
-          type: file.type || 'application/octet-stream',
-          uploadDate: new Date().toISOString(),
-          starred: false,
-          fileData: fileData // Store the Base64 encoded file
-        };
-        newDocs.push(newDoc);
+        // Upload to backend
+        await documentAPI.upload({
+          title: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileData: fileData, // Base64 string
+          size: file.size
+        });
+
+        uploadedCount++;
       } catch (error) {
-        console.error(`Failed to read file: ${file.name}`, error);
+        console.error(`Failed to upload file: ${file.name}`, error);
         showMessage(`Failed to upload ${file.name}`, 'error');
       }
     }
 
-    if (newDocs.length > 0) {
-      const newData = [...allData, ...newDocs];
-      updateAllData(newData);
-      showMessage(`Uploaded ${newDocs.length} file(s)!`, 'success');
+    if (uploadedCount > 0) {
+      showMessage(`Uploaded ${uploadedCount} file(s)!`, 'success');
+      // Refresh the documents list
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     }
 
     setIsUploading(false);

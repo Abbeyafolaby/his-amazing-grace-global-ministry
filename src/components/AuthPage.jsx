@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { authAPI } from '../utils/api.js';
 
-function AuthPage({ config, authMode, setAuthMode, allData, setCurrentUser, setShowLanding, setActiveTab, showMessage, updateAllData }) {
+function AuthPage({ config, authMode, setAuthMode, setCurrentUser, setShowLanding, setActiveTab, showMessage }) {
   const { surface_color, text_color, primary_action_color, font_size, signup_title, login_title } = config;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,38 +17,54 @@ function AuthPage({ config, authMode, setAuthMode, allData, setCurrentUser, setS
 
     setLoading(true);
 
-    if (authMode === 'signup') {
-      const existingUser = allData.find(d => d.isUser && d.userEmail === email);
-      if (existingUser) {
-        setLoading(false);
-        showMessage('Email already registered. Please sign in instead.', 'error');
-        return;
-      }
+    try {
+      if (authMode === 'signup') {
+        const { data } = await authAPI.register(email, password);
 
-      const newUser = {
-        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-        isUser: true,
-        userEmail: email,
-        userPassword: password
-      };
+        // Store token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify({
+          id: data._id,
+          email: data.email,
+          username: data.username,
+          isAdmin: data.isAdmin
+        }));
 
-      const newData = [...allData, newUser];
-      updateAllData(newData);
-      setCurrentUser(newUser);
-      setShowLanding(false);
-      setActiveTab('upload');
-      showMessage(`Welcome ${email}!`, 'success');
-    } else {
-      const user = allData.find(d => d.isUser && d.userEmail === email && d.userPassword === password);
-      if (user) {
-        setCurrentUser(user);
+        setCurrentUser({
+          id: data._id,
+          email: data.email,
+          username: data.username,
+          isAdmin: data.isAdmin
+        });
+        setShowLanding(false);
+        setActiveTab('upload');
+        showMessage(`Welcome ${email}!`, 'success');
+      } else {
+        const { data } = await authAPI.login(email, password);
+
+        // Store token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify({
+          id: data._id,
+          email: data.email,
+          username: data.username,
+          isAdmin: data.isAdmin
+        }));
+
+        setCurrentUser({
+          id: data._id,
+          email: data.email,
+          username: data.username,
+          isAdmin: data.isAdmin
+        });
         setShowLanding(false);
         setActiveTab('upload');
         showMessage(`Welcome back ${email}!`, 'success');
-      } else {
-        setLoading(false);
-        showMessage('Invalid credentials', 'error');
       }
+    } catch (error) {
+      setLoading(false);
+      const errorMessage = error.response?.data?.message || 'An error occurred';
+      showMessage(errorMessage, 'error');
     }
   };
 

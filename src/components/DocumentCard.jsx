@@ -1,25 +1,32 @@
 import { useState } from 'react';
 import { getFileIcon, getFileColor, formatFileSize } from '../utils/helpers';
 import DocumentPreview from './DocumentPreview.jsx';
+import { documentAPI } from '../utils/api.js';
 
-function DocumentCard({ doc, config, allData, currentUser, activeTab, showMessage, updateAllData }) {
+function DocumentCard({ doc, config, currentUser, activeTab, showMessage, onDocumentUpdate }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const fileIcon = getFileIcon(doc.type);
-  const fileColor = getFileColor(doc.type, config.primary_action_color);
-  const owner = allData.find(d => d.isUser && d.id === doc.userId);
-  const ownerEmail = owner ? owner.userEmail : 'Unknown';
-  const isMyDocument = doc.userId === currentUser.id;
+  const fileIcon = getFileIcon(doc.fileType);
+  const fileColor = getFileColor(doc.fileType, config.primary_action_color);
+  const ownerEmail = doc.uploadedBy?.email || 'Unknown';
+  const isMyDocument = doc.uploadedBy?._id === currentUser.id;
 
   const handleToggleStar = async () => {
-    if (!isMyDocument) return;
     setIsUpdating(true);
 
-    const updatedDoc = { ...doc, starred: !doc.starred };
-    const newData = allData.map(d => d.id === doc.id ? updatedDoc : d);
-    updateAllData(newData);
-
-    setIsUpdating(false);
+    try {
+      await documentAPI.toggleStar(doc._id);
+      showMessage(doc.starred ? 'Removed from starred' : 'Added to starred', 'success');
+      // Refresh documents list
+      if (onDocumentUpdate) {
+        onDocumentUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to toggle star:', error);
+      showMessage('Failed to update star status', 'error');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleDownload = () => {
@@ -33,12 +40,12 @@ function DocumentCard({ doc, config, allData, currentUser, activeTab, showMessag
       // Create a temporary link element and trigger download
       const link = document.createElement('a');
       link.href = doc.fileData;
-      link.download = doc.name;
+      link.download = doc.title;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      showMessage(`Downloaded: ${doc.name}`, 'success');
+      showMessage(`Downloaded: ${doc.title}`, 'success');
     } catch (error) {
       console.error('Download failed:', error);
       showMessage('Download failed', 'error');
@@ -53,13 +60,13 @@ function DocumentCard({ doc, config, allData, currentUser, activeTab, showMessag
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h4 style={{ fontSize: `${config.font_size}px`, fontWeight: 600, color: config.text_color, margin: `0 0 ${config.font_size * 0.25}px 0`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {doc.name}
+            {doc.title}
           </h4>
           <p style={{ fontSize: `${config.font_size * 0.875}px`, color: config.text_color, opacity: 0.6, margin: 0 }}>
             <i className="fas fa-hdd" style={{ marginRight: `${config.font_size * 0.25}px` }}></i>
             {formatFileSize(doc.size)}
             <i className="fas fa-calendar" style={{ marginLeft: `${config.font_size * 0.5}px`, marginRight: `${config.font_size * 0.25}px` }}></i>
-            {new Date(doc.uploadDate).toLocaleDateString()}
+            {new Date(doc.createdAt).toLocaleDateString()}
           </p>
           {activeTab === 'shared' && (
             <p style={{ fontSize: `${config.font_size * 0.75}px`, color: config.secondary_action_color, fontWeight: 600, marginTop: `${config.font_size * 0.25}px`, display: 'flex', alignItems: 'center', gap: `${config.font_size * 0.25}px` }}>
@@ -69,8 +76,8 @@ function DocumentCard({ doc, config, allData, currentUser, activeTab, showMessag
         </div>
         <button
           onClick={handleToggleStar}
-          disabled={isUpdating || !isMyDocument}
-          style={{ padding: `${config.font_size * 0.5}px`, border: 'none', background: 'transparent', cursor: (isUpdating || !isMyDocument) ? 'not-allowed' : 'pointer', fontSize: `${config.font_size * 1.25}px`, color: doc.starred ? '#fbbf24' : `${config.text_color}33`, opacity: (isUpdating || !isMyDocument) ? 0.3 : 1 }}
+          disabled={isUpdating}
+          style={{ padding: `${config.font_size * 0.5}px`, border: 'none', background: 'transparent', cursor: isUpdating ? 'not-allowed' : 'pointer', fontSize: `${config.font_size * 1.25}px`, color: doc.starred ? '#fbbf24' : `${config.text_color}33`, opacity: isUpdating ? 0.3 : 1 }}
         >
           {isUpdating ? <i className="fas fa-spinner spinner"></i> : <i className="fas fa-star"></i>}
         </button>

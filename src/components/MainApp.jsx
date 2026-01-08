@@ -1,24 +1,54 @@
+import { useState, useEffect } from 'react';
 import TabButton from './TabButton';
 import UploadTab from './UploadTab';
 import DocumentsView from './DocumentsView';
+import { documentAPI } from '../utils/api.js';
 
-function MainApp({ config, currentUser, allData, activeTab, setActiveTab, searchQuery, setSearchQuery, viewMode, setViewMode, onLogout, message, showMessage, updateAllData }) {
-  const myDocuments = allData.filter(d => !d.isUser && d.userId === currentUser.id);
-  const allUserDocuments = allData.filter(d => !d.isUser);
-  const documents = activeTab === 'shared' ? allUserDocuments : myDocuments;
-  const allUsersCount = allData.filter(d => d.isUser).length;
+function MainApp({ config, currentUser, activeTab, setActiveTab, searchQuery, setSearchQuery, viewMode, setViewMode, onLogout, onShowAdmin, message, showMessage }) {
+  const [myDocuments, setMyDocuments] = useState([]);
+  const [allDocuments, setAllDocuments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [allUsersCount, setAllUsersCount] = useState(0);
+
+  // Fetch documents based on active tab
+  useEffect(() => {
+    fetchDocuments();
+  }, [activeTab]);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'shared') {
+        const { data } = await documentAPI.getAll();
+        setAllDocuments(data);
+        // Count unique users
+        const uniqueUsers = new Set(data.map(doc => doc.uploadedBy._id));
+        setAllUsersCount(uniqueUsers.size);
+      } else if (activeTab !== 'upload') {
+        const { data } = await documentAPI.getMy();
+        setMyDocuments(data);
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      showMessage('Failed to load documents', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const documents = activeTab === 'shared' ? allDocuments : myDocuments;
 
   let filteredDocs = documents;
   if (activeTab === 'images') {
-    filteredDocs = documents.filter(d => d.type && d.type.includes('image'));
+    filteredDocs = documents.filter(d => d.fileType && d.fileType.includes('image'));
   } else if (activeTab === 'media') {
-    filteredDocs = documents.filter(d => d.type && (d.type.includes('video') || d.type.includes('audio')));
+    filteredDocs = documents.filter(d => d.fileType && (d.fileType.includes('video') || d.fileType.includes('audio')));
   } else if (activeTab === 'starred') {
     filteredDocs = documents.filter(d => d.starred);
   }
 
   if (searchQuery) {
-    filteredDocs = filteredDocs.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    filteredDocs = filteredDocs.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()));
   }
 
   return (
@@ -35,11 +65,16 @@ function MainApp({ config, currentUser, allData, activeTab, setActiveTab, search
               </h1>
               <div style={{ fontSize: `${config.font_size * 0.75}px`, color: config.text_color, opacity: 0.6 }}>
                 <i className="fas fa-user" style={{ marginRight: `${config.font_size * 0.25}px` }}></i>
-                {currentUser.userEmail}
+                {currentUser.email}
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: `${config.font_size * 0.5}px`, alignItems: 'center' }}>
+            {currentUser?.isAdmin && (
+              <button onClick={onShowAdmin} style={{ padding: `${config.font_size * 0.625}px ${config.font_size}px`, border: 'none', borderRadius: `${config.font_size * 0.5}px`, fontSize: `${config.font_size * 0.875}px`, fontWeight: 600, cursor: 'pointer', background: config.secondary_action_color, color: '#ffffff', marginRight: `${config.font_size * 0.5}px` }}>
+                <i className="fas fa-user-shield"></i> Admin
+              </button>
+            )}
             <button onClick={onLogout} style={{ padding: `${config.font_size * 0.625}px ${config.font_size}px`, border: 'none', borderRadius: `${config.font_size * 0.5}px`, fontSize: `${config.font_size * 0.875}px`, fontWeight: 600, cursor: 'pointer', background: '#ef4444', color: '#ffffff' }}>
               <i className="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -65,9 +100,9 @@ function MainApp({ config, currentUser, allData, activeTab, setActiveTab, search
         )}
 
         {activeTab === 'upload' ? (
-          <UploadTab config={config} documents={myDocuments} currentUser={currentUser} showMessage={showMessage} allData={allData} updateAllData={updateAllData} />
+          <UploadTab config={config} documents={myDocuments} currentUser={currentUser} showMessage={showMessage} onUploadSuccess={fetchDocuments} />
         ) : (
-          <DocumentsView config={config} documents={filteredDocs} allData={allData} currentUser={currentUser} activeTab={activeTab} searchQuery={searchQuery} setSearchQuery={setSearchQuery} showMessage={showMessage} updateAllData={updateAllData} />
+          <DocumentsView config={config} documents={filteredDocs} currentUser={currentUser} activeTab={activeTab} searchQuery={searchQuery} setSearchQuery={setSearchQuery} showMessage={showMessage} loading={loading} onDocumentUpdate={fetchDocuments} />
         )}
       </main>
     </div>

@@ -19,19 +19,11 @@ const defaultConfig = {
   login_title: "Welcome Back",
   upload_button_text: "Upload Document",
   empty_state_message: "No documents yet. Upload your first file!",
-  search_placeholder: "Search documents...",
-  admin_code: "12345"
-};
-
-// Mock storage - replace with real backend/localStorage
-const mockStorage = {
-  users: [],
-  documents: []
+  search_placeholder: "Search documents..."
 };
 
 function App() {
   const [config] = useState(defaultConfig);
-  const [allData, setAllData] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [showLanding, setShowLanding] = useState(true);
   const [authMode, setAuthMode] = useState('login');
@@ -41,13 +33,23 @@ function App() {
   const [message, setMessage] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showAdminAuth, setShowAdminAuth] = useState(false);
 
   useEffect(() => {
-    // Load data from localStorage
-    const savedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-    const savedDocs = JSON.parse(localStorage.getItem('documents') || '[]');
-    setAllData([...savedUsers, ...savedDocs]);
+    // Load user from localStorage if token exists
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+        setShowLanding(false);
+      } catch (error) {
+        console.error('Error loading user:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
 
     setTimeout(() => {
       setIsInitializing(false);
@@ -63,14 +65,6 @@ function App() {
   const showMessage = (text, type = 'info') => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
-  };
-
-  const updateAllData = (newData) => {
-    setAllData(newData);
-    const users = newData.filter(d => d.isUser);
-    const docs = newData.filter(d => !d.isUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('documents', JSON.stringify(docs));
   };
 
   if (isInitializing) {
@@ -124,15 +118,13 @@ function App() {
     );
   }
 
-  if (showAdmin) {
+  if (showAdmin && currentUser?.isAdmin) {
     return (
       <AdminDashboard
         config={config}
-        allData={allData}
         currentUser={currentUser}
         showMessage={showMessage}
         onBack={() => setShowAdmin(false)}
-        updateAllData={updateAllData}
       />
     );
   }
@@ -143,9 +135,6 @@ function App() {
         config={config}
         onGetStarted={() => { setShowLanding(false); setAuthMode('signup'); }}
         onSignIn={() => { setShowLanding(false); setAuthMode('login'); }}
-        showAdminAuth={showAdminAuth}
-        setShowAdminAuth={setShowAdminAuth}
-        setShowAdmin={setShowAdmin}
       />
     );
   }
@@ -156,12 +145,10 @@ function App() {
         config={config}
         authMode={authMode}
         setAuthMode={setAuthMode}
-        allData={allData}
         setCurrentUser={setCurrentUser}
         setShowLanding={setShowLanding}
         setActiveTab={setActiveTab}
         showMessage={showMessage}
-        updateAllData={updateAllData}
       />
     );
   }
@@ -170,7 +157,6 @@ function App() {
     <MainApp
       config={config}
       currentUser={currentUser}
-      allData={allData}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       searchQuery={searchQuery}
@@ -181,10 +167,12 @@ function App() {
         setCurrentUser(null);
         setShowLanding(true);
         setActiveTab('upload');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }}
+      onShowAdmin={() => setShowAdmin(true)}
       message={message}
       showMessage={showMessage}
-      updateAllData={updateAllData}
     />
   );
 }
