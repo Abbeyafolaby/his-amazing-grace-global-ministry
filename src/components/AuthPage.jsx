@@ -15,6 +15,19 @@ function AuthPage({ config, authMode, setAuthMode, setCurrentUser, setShowLandin
       return;
     }
 
+    // Validate password length
+    if (password.length < 5) {
+      showMessage('Password must be at least 5 characters long', 'error');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showMessage('Please enter a valid email address', 'error');
+      return;
+    }
+
     setLoading(true);
 
     try {
