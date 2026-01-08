@@ -15,7 +15,10 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: ['https://his-amazing-grace-global-ministry.vercel.app', 'http://localhost:5173'],
+    credentials: true
+}));
 app.use(express.json({ limit: '50mb' })); // Increased limit for Base64 files
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
