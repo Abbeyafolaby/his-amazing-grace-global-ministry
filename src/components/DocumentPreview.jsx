@@ -12,11 +12,11 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         try {
             const link = document.createElement('a');
             link.href = doc.fileData;
-            link.download = doc.name;
+            link.download = doc.title;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showMessage(`Downloaded: ${doc.name}`, 'success');
+            showMessage(`Downloaded: ${doc.title}`, 'success');
         } catch (error) {
             console.error('Download failed:', error);
             showMessage('Download failed', 'error');
@@ -35,12 +35,12 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         }
 
         // Image files
-        if (doc.type.includes('image')) {
+        if (doc.fileType.includes('image')) {
             return (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: `${config.font_size}px` }}>
                     <img
                         src={doc.fileData}
-                        alt={doc.name}
+                        alt={doc.title}
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: `${config.font_size * 0.5}px` }}
                     />
                 </div>
@@ -48,7 +48,7 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         }
 
         // PDF files
-        if (doc.type.includes('pdf')) {
+        if (doc.fileType.includes('pdf')) {
             return (
                 <embed
                     src={doc.fileData}
@@ -59,14 +59,14 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         }
 
         // Video files
-        if (doc.type.includes('video')) {
+        if (doc.fileType.includes('video')) {
             return (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: `${config.font_size}px` }}>
                     <video
                         controls
                         style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: `${config.font_size * 0.5}px` }}
                     >
-                        <source src={doc.fileData} type={doc.type} />
+                        <source src={doc.fileData} type={doc.fileType} />
                         Your browser does not support video playback.
                     </video>
                 </div>
@@ -74,16 +74,16 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         }
 
         // Audio files
-        if (doc.type.includes('audio')) {
+        if (doc.fileType.includes('audio')) {
             return (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: `${config.font_size * 4}px`, color: config.text_color }}>
                     <i className="fas fa-music" style={{ fontSize: `${config.font_size * 6}px`, marginBottom: `${config.font_size * 2}px`, color: config.primary_action_color }}></i>
-                    <p style={{ fontSize: `${config.font_size * 1.25}px`, fontWeight: 600, marginBottom: `${config.font_size * 2}px` }}>{doc.name}</p>
+                    <p style={{ fontSize: `${config.font_size * 1.25}px`, fontWeight: 600, marginBottom: `${config.font_size * 2}px` }}>{doc.title}</p>
                     <audio
                         controls
                         style={{ width: '100%', maxWidth: '500px' }}
                     >
-                        <source src={doc.fileData} type={doc.type} />
+                        <source src={doc.fileData} type={doc.fileType} />
                         Your browser does not support audio playback.
                     </audio>
                 </div>
@@ -91,7 +91,7 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         }
 
         // Text files
-        if (doc.type.includes('text') || doc.name.endsWith('.txt')) {
+        if (doc.fileType.includes('text') || doc.title.endsWith('.txt')) {
             // For text files, we need to decode the Base64 if it's a data URL
             try {
                 let textContent = doc.fileData;
@@ -125,7 +125,7 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
         return (
             <div style={{ textAlign: 'center', padding: `${config.font_size * 4}px`, color: config.text_color }}>
                 <i className="fas fa-file" style={{ fontSize: `${config.font_size * 6}px`, marginBottom: `${config.font_size * 2}px`, color: config.primary_action_color }}></i>
-                <p style={{ fontSize: `${config.font_size * 1.5}px`, fontWeight: 700, marginBottom: `${config.font_size}px` }}>{doc.name}</p>
+                <p style={{ fontSize: `${config.font_size * 1.5}px`, fontWeight: 700, marginBottom: `${config.font_size}px` }}>{doc.title}</p>
                 <p style={{ fontSize: `${config.font_size}px`, opacity: 0.7, marginBottom: `${config.font_size * 2}px` }}>Preview not available for this file type</p>
                 <button onClick={handleDownload} className="btn-primary" style={{ padding: `${config.font_size}px ${config.font_size * 2}px`, border: 'none', borderRadius: `${config.font_size * 0.5}px`, fontSize: `${config.font_size}px`, fontWeight: 600, cursor: 'pointer', background: config.primary_action_color, color: '#ffffff' }}>
                     <i className="fas fa-download" style={{ marginRight: `${config.font_size * 0.5}px` }}></i>
@@ -178,7 +178,7 @@ function DocumentPreview({ doc, config, onClose, showMessage }) {
                         whiteSpace: 'nowrap'
                     }}>
                         <i className="fas fa-eye" style={{ marginRight: `${config.font_size * 0.5}px`, color: config.primary_action_color }}></i>
-                        {doc.name}
+                        {doc.title}
                     </h3>
                 </div>
                 <div style={{ display: 'flex', gap: `${config.font_size * 0.5}px` }}>
